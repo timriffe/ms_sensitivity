@@ -77,13 +77,15 @@ Ptibble2U <- function(Ptibble) {
     as.matrix()
 }
 
-Ptibble2N <- function(Ptibble, discount = FALSE) {
+# 24-07-2024, updated to add interval arg
+Ptibble2N <- function(Ptibble, discount = FALSE, interval = 1) {
   
   U <- Ptibble2U(Ptibble)
   I <- diag(rep(1, nrow(U)))
-  N <- solve(I - U) 
+  N <- solve(I - U) * interval
   if (discount) {
-    N < N - I / 2
+    # untested
+    N <- N - (I * interval) / 2
   }
   return(N)
 }

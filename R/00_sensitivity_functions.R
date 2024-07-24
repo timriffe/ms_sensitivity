@@ -2,7 +2,10 @@
 # these are the three basic parameterizations of HLE, ULE, LE 
 
 # P1
-f1 <- function(hh, hu, uu, uh, init = c(H=.9,U=.1), expectancy = c("h","u","t")){
+f1 <- function(hh, hu, uu, uh, 
+               init = c(H=.9,U=.1), 
+               expectancy = c("h","u","t"), 
+               interval = 1){
   expectany = match.arg(expectancy)
   n     = length(hh)
   lh    = rep(0,n+1)
@@ -19,20 +22,23 @@ f1 <- function(hh, hu, uu, uh, init = c(H=.9,U=.1), expectancy = c("h","u","t"))
   
   if (expectancy == "h"){
     # 3a
-    out <- sum(lh)
+    out <- sum(lh) 
   }
   if (expectancy == "u"){
     # 3b
-    out <- sum(lu)
+    out <- sum(lu) 
   }
   if (expectancy == "t"){
     out <- sum(lh) + sum(lu)
   }
-  out
+  out * interval
 }
 
 # P2
-f2 <- function(hd, hu, ud, uh, init = c(H=.9,U=.1), expectancy = c("h","u","t")){
+f2 <- function(hd, hu, ud, uh, 
+               init = c(H=.9,U=.1), 
+               expectancy = c("h","u","t"), 
+               interval = 1){
   expectany = match.arg(expectancy)
   n     = length(hd)
   lh    = rep(0,n+1)
@@ -63,11 +69,14 @@ f2 <- function(hd, hu, ud, uh, init = c(H=.9,U=.1), expectancy = c("h","u","t"))
   if (expectancy == "t"){
     out <- sum(lh) + sum(lu)
   }
-  out
+  out * interval
 }
 
 # P3
-f3 <- function(hd, hh, ud, uu, init = c(H=.9,U=.1), expectancy = c("h","u","t")){
+f3 <- function(hd, hh, ud, uu, 
+               init = c(H=.9,U=.1), 
+               expectancy = c("h","u","t"),
+               interval = 1){
   expectany = match.arg(expectancy)
   n     = length(hd)
   lh    = rep(0,n+1)
@@ -93,7 +102,7 @@ f3 <- function(hd, hh, ud, uu, init = c(H=.9,U=.1), expectancy = c("h","u","t"))
   if (expectancy == "t"){
     out <- sum(lh) + sum(lu)
   }
-  out
+  out * interval
 }
 
 # ------------------------- #
@@ -101,7 +110,9 @@ f3 <- function(hd, hh, ud, uu, init = c(H=.9,U=.1), expectancy = c("h","u","t"))
 # just need to be careful putting pars in the same order as the 
 # arguments specified in the corresponding function.
 # w stands for wrapper. Here, first element of pars should be initH.
-f1w <- function(pars,expectancy="h"){
+f1w <- function(pars, 
+                expectancy = "h", 
+                interval = 1){
   init        <- c(pars[1],1-pars[1])
   names(init) <- c("H","U")
   pars        <- pars[-1]
@@ -115,10 +126,13 @@ f1w <- function(pars,expectancy="h"){
      uu = pars[,"UU"],
      uh = pars[,"UH"],
      init = init,
-     expectancy = expectancy)
+     expectancy = expectancy,
+     interval = interval)
 }
 
-f2w <- function(pars,expectancy="h"){
+f2w <- function(pars,
+                expectancy = "h",
+                interval = 1){
   init        <- c(pars[1],1-pars[1])
   names(init) <- c("H","U")
   pars        <- pars[-1]
@@ -138,10 +152,13 @@ f2w <- function(pars,expectancy="h"){
      ud = pars[,"UD"],
      uh = pars[,"UH"],
      init = init,
-     expectancy = expectancy)
+     expectancy = expectancy,
+     interval = interval)
 }
 
-f3w <- function(pars,expectancy="h"){
+f3w <- function(pars,
+                expectancy = "h",
+                interval = 1){
   init        <- c(pars[1],1-pars[1])
   names(init) <- c("H","U")
   pars        <- pars[-1]
@@ -161,12 +178,16 @@ f3w <- function(pars,expectancy="h"){
      ud = pars[,"UD"],
      uu = pars[,"UU"],
      init = init,
-     expectancy = expectancy)
+     expectancy = expectancy,
+     interval = interval)
 }
 
 # and again wrapping parameterizations for tidy calculations,
 # t standing for tidy
-f1t <- function(data,init=c(H=.99,U=.01),expectancy){
+f1t <- function(data,
+                init = c(H = .99, U = .01),
+                expectancy = "h",
+                interval = 1){
   pt =
     data |> 
     select(age, transition, p) |> 
@@ -177,24 +198,32 @@ f1t <- function(data,init=c(H=.99,U=.01),expectancy){
      uu = pt$UU, 
      uh = pt$UH, 
      init = init, 
-     expectancy = expectancy)
+     expectancy = expectancy,
+     interval = interval)
 }
 
-f2t <- function(data,init=c(H=.99,U=.01),expectancy){
+f2t <- function(data,
+                init = c(H = .99, U = .01),
+                expectancy = "h",
+                interval = 1){
   pt <-
     data |> 
     select(age, transition, p) |> 
     pivot_wider(names_from = transition, values_from = p)
-  if (missing(init))  init = init_constant(pt[1,])
+  if (missing(init))  init = init_constant(pt[1, ])
   f2(hd = pt$HD, 
      hu = pt$HU, 
      ud = pt$UD, 
      uh = pt$UH, 
      init = init, 
-     expectancy = expectancy)
+     expectancy = expectancy,
+     interval = interval)
 }
 
-f3t <- function(data,init=c(H=.99,U=.01),expectancy){
+f3t <- function(data,
+                init = c(H = .99, U = .01),
+                expectancy = "h",
+                interval = 1){
   pt <-
     data |> 
     select(age, transition, p) |> 
@@ -205,7 +234,8 @@ f3t <- function(data,init=c(H=.99,U=.01),expectancy){
      uu = pt$UU, 
      ud = pt$UD, 
      init = init, 
-     expectancy = expectancy)
+     expectancy = expectancy,
+     interval = interval)
 }
 
 # helper function for padding block matrices
@@ -237,8 +267,11 @@ mpad <- function(X,
 }
 
 # sensitivity functions using vector args for transitions
-s1 <- function(hh, hu, uu, uh, init = c(H=.9,U=.1), 
-               expectancy = c("h","u","t", "all")){
+# TR: interval arg added, but need to double-check where it needs to be used
+s1 <- function(hh, hu, uu, uh, 
+               init = c(H = .9, U = .1), 
+               expectancy = c("h", "u", "t", "all"),
+               interval = 1){
   # time steps
   n     = length(hh)
   # transient states
