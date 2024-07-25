@@ -269,7 +269,7 @@ mpad <- function(X,
 # sensitivity functions using vector args for transitions
 # TR: interval arg added, but need to double-check where it needs to be used
 s1 <- function(hh, hu, uu, uh, 
-               init = c(H = .9, U = .1), 
+               init = c(H = .97, U = .03), 
                expectancy = c("h", "u", "t", "all"),
                interval = 1){
   # time steps
@@ -321,7 +321,9 @@ s1 <- function(hh, hu, uu, uh,
   
   # we use a shorthand solution for sensitivity to initial conditions.
   # eq 14
-  s_in <- s_init(hh,hu,uu,uh)
+  s_in <- s_init(hh,hu,uu,uh,
+                 interval = interval,
+                 interval = interval)
   
   # This gives identical values for h and u, which would sum to t,
   # but I think s_init() is somehow slicker
@@ -375,12 +377,19 @@ s1 <- function(hh, hu, uu, uh,
     as.matrix() |> 
     as.data.frame() |> 
     rownames_to_column("trans_age") |> 
-    pivot_longer(-trans_age,names_to="state_age",values_to ="effect") |> 
-    separate_wider_delim(trans_age,names=c("transition","agefrom"),delim="_") |> 
-    separate_wider_delim(state_age,names=c("state","age"),delim="_") |> 
+    pivot_longer(-trans_age,
+                 names_to="state_age",
+                 values_to ="effect") |> 
+    separate_wider_delim(trans_age,
+                         names=c("transition","agefrom"),
+                         delim="_") |> 
+    separate_wider_delim(state_age,
+                         names=c("state","age"),
+                         delim="_") |> 
     mutate(age = as.integer(age),
            agefrom = as.integer(agefrom)) |> 
-    filter(age >= agefrom) 
+    filter(age >= agefrom) |> 
+    mutate(effect = effect * interval)
   
   # With respect to which expectancy?
   if (expectancy == "h"){
@@ -409,7 +418,6 @@ s1 <- function(hh, hu, uu, uh,
       rename(age = agefrom)
     
     # add on initial conditions
-    # comp_effect = sum(init_effects[init_U_ind])
     out = tibble(age = 0,
            transition = "init",
            effect = s_in["u"]) |> 
@@ -424,7 +432,6 @@ s1 <- function(hh, hu, uu, uh,
       rename(age = agefrom)
     
     # add on initial conditions
-    # comp_effect = sum(init_effects)
     out = tibble(age = 0,
                  transition = "init",
                  effect = s_in["t"]) |> 
@@ -471,8 +478,10 @@ s1 <- function(hh, hu, uu, uh,
 }
 
 
-s2 <- function(hd, hu, ud, uh, init = c(H=.97,U=.03), 
-               expectancy = c("h","u","t","all")){
+s2 <- function(hd, hu, ud, uh, 
+               init = c(H = .97, U = .03), 
+               expectancy = c("h","u","t","all"),
+               interval = 1){
   # time steps
   n     = length(hd)
   # transient states
@@ -527,7 +536,8 @@ s2 <- function(hd, hu, ud, uh, init = c(H=.97,U=.03),
   s_in <- s_init(hh = (1 - hd - hu),
                  hu,
                  uu = (1 - ud - uh),
-                 uh)
+                 uh,
+                 interval = interval)
   
   # eq 16
   delta_u_l = list()
@@ -558,11 +568,11 @@ s2 <- function(hd, hu, ud, uh, init = c(H=.97,U=.03),
   # first 4 rows = first age,
   age_from      = rep(0:n,each=s^2)
   state_from_to = rep(c("HD","UH","UD","HU"),n+1)
-  rownames(sen) = paste(state_from_to,age_from,sep="_")
+  rownames(sen) = paste(state_from_to, age_from, sep = "_")
   
   age_to        = rep(0:n,each=s)
   effect_on     = rep(c("H","U"),n+1)
-  colnames(sen) = paste(effect_on,age_to,sep="_")
+  colnames(sen) = paste(effect_on, age_to, sep="_")
   
   # return output reformatted
   senl = 
@@ -570,12 +580,20 @@ s2 <- function(hd, hu, ud, uh, init = c(H=.97,U=.03),
     as.matrix() |> 
     as.data.frame() |> 
     rownames_to_column("trans_age") |> 
-    pivot_longer(-trans_age,names_to="state_age",values_to ="effect") |> 
-    separate_wider_delim(trans_age,names=c("transition","agefrom"),delim="_") |> 
-    separate_wider_delim(state_age,names=c("state","age"),delim="_") |> 
+    pivot_longer(-trans_age,
+                 names_to="state_age",
+                 values_to ="effect") |> 
+    separate_wider_delim(trans_age,
+                         names=c("transition","agefrom"),
+                         delim="_") |> 
+    separate_wider_delim(state_age,
+                         names=c("state","age"),
+                         delim="_") |> 
     mutate(age = as.integer(age),
            agefrom = as.integer(agefrom)) |> 
-    filter(age >= agefrom) 
+    filter(age >= agefrom) |> 
+    mutate(effect = effect * interval)
+  
   if (expectancy == "h"){
     out =
       senl |> 
@@ -665,8 +683,10 @@ s2 <- function(hd, hu, ud, uh, init = c(H=.97,U=.03),
 }
 
 
-s3 <- function(hh, uu, ud, hd, init = c(H=.97,U=.03), 
-               expectancy = c("h","u","t","all")){
+s3 <- function(hh, uu, ud, hd, 
+               init = c(H = .97, U = .03), 
+               expectancy = c("h","u","t","all"),
+               interval = 1){
   # time steps
   n     = length(hd)
   # transient states
@@ -744,12 +764,12 @@ s3 <- function(hh, uu, ud, hd, init = c(H=.97,U=.03),
   # first 4 rows = first age,
   age_from      = rep(0:n,each=s^2)
   state_from_to = rep(c("HH","UU","UD","HD"),n+1)
-  rownames(sen) = paste(state_from_to,age_from,sep="_")
+  rownames(sen) = paste(state_from_to, age_from, sep = "_")
   # u1,u2,u3,u4
   
   age_to        = rep(0:n,each=s)
   effect_on     = rep(c("H","U"),n+1)
-  colnames(sen) = paste(effect_on,age_to,sep="_")
+  colnames(sen) = paste(effect_on, age_to, sep = "_")
   
   # return output reformatted
   senl = 
@@ -757,12 +777,19 @@ s3 <- function(hh, uu, ud, hd, init = c(H=.97,U=.03),
     as.matrix() |> 
     as.data.frame() |> 
     rownames_to_column("trans_age") |> 
-    pivot_longer(-trans_age,names_to="state_age",values_to ="effect") |> 
-    separate_wider_delim(trans_age,names=c("transition","agefrom"),delim="_") |> 
-    separate_wider_delim(state_age,names=c("state","age"),delim="_") |> 
+    pivot_longer(-trans_age,
+                 names_to="state_age",
+                 values_to ="effect") |> 
+    separate_wider_delim(trans_age,
+                         names=c("transition","agefrom"),
+                         delim="_") |> 
+    separate_wider_delim(state_age,
+                         names=c("state","age"),
+                         delim="_") |> 
     mutate(age = as.integer(age),
            agefrom = as.integer(agefrom)) |> 
-    filter(age >= agefrom) 
+    filter(age >= agefrom) |> 
+    mutate(effect = effect * interval)
   
   if (expectancy == "h"){
     out =
@@ -852,7 +879,7 @@ s3 <- function(hh, uu, ud, hd, init = c(H=.97,U=.03),
 }
 
 # again, but for use in tidy pipeline
-s1t <- function(data,init,expectancy){
+s1t <- function(data,init,expectancy, interval = 1){
   pt <-
     data |> 
     select(age, transition, p) |> 
@@ -863,10 +890,11 @@ s1t <- function(data,init,expectancy){
      uu = pt$UU, 
      uh = pt$UH, 
      init = init, 
-     expectancy = expectancy)
+     expectancy = expectancy,
+     interval = interval)
 }
 
-s2t <- function(data,init,expectancy){
+s2t <- function(data,init,expectancy, interval = 1){
   pt <-
     data |> 
     select(age, transition, p) |> 
@@ -877,10 +905,11 @@ s2t <- function(data,init,expectancy){
      ud = pt$UD, 
      uh = pt$UH, 
      init = init, 
-     expectancy = expectancy)
+     expectancy = expectancy,
+     interval = interval)
 }
 
-s3t <- function(data,init,expectancy){
+s3t <- function(data,init,expectancy,interval=1){
   pt <-
     data |> 
     select(age, transition, p) |> 
@@ -891,19 +920,26 @@ s3t <- function(data,init,expectancy){
      uu = pt$UU, 
      ud = pt$UD, 
      init = init, 
-     expectancy = expectancy)
+     expectancy = expectancy,
+     interval=interval)
 }
 
 # numerical sensitivities (gradients, etc), for comparison
 # These offer a check that code is doing the right thing. You
 # need to call s_init() beforehand or else specify the fraction healthy
 # at start
-s1n <- function(hh, hu, uu, uh, initH = .99, expectancy = "h"){
+s1n <- function(hh, hu, uu, uh, 
+                initH = .99, 
+                expectancy = "h",
+                interval=1){
 
   pars1    <- c(initH,hh,hu,uu,uh)
-  pd1      <- numDeriv::grad(f1w, pars1, expectancy = expectancy)
+  pd1      <- numDeriv::grad(f1w, 
+                             pars1, 
+                             expectancy = expectancy,
+                             interval = interval)
   
-  s_init   <- pd1[1]
+  s_init.   <- pd1[1]
   pd1      <- pd1[-1]
   n        <- length(pd1)/4
   dim(pd1) <- c(n,4)
@@ -916,15 +952,21 @@ s1n <- function(hh, hu, uu, uh, initH = .99, expectancy = "h"){
            case = "1") |> 
     pivot_longer(1:4, names_to = "transition", values_to = "s")
   
-  bind_rows(tibble(age=0,case="1",transition="init",s=s_init),
+  bind_rows(tibble(age=0,case="1",transition="init",s=s_init.),
             out)
 }
 
-s2n <- function(hd, hu, ud, uh, initH = .99, expectancy = "h"){
+s2n <- function(hd, hu, ud, uh, 
+                initH = .99, 
+                expectancy = "h",
+                interval = 1){
   pars2    <- c(initH, hd, hu, ud, uh)
-  pd2      <- numDeriv::grad(f2w, pars2, expectancy=expectancy)
+  pd2      <- numDeriv::grad(f2w, 
+                             pars2, 
+                             expectancy = expectancy,
+                             interval = interval)
  
-  s_init   <- pd2[1]
+  s_init.   <- pd2[1]
   pd2      <- pd2[-1]
   
   n        <- length(pd2)/4
@@ -938,15 +980,21 @@ s2n <- function(hd, hu, ud, uh, initH = .99, expectancy = "h"){
            case = "2") |> 
     pivot_longer(1:4, names_to = "transition", values_to = "s")
   
-  bind_rows(tibble(age=0,case="2",transition="init",s=s_init),
+  bind_rows(tibble(age=0,case="2",transition="init",s=s_init.),
             out)
 }
 
-s3n <- function(hd, hh, ud, uu, initH = .99, expectancy = "h"){
+s3n <- function(hd, hh, ud, uu, 
+                initH = .99, 
+                expectancy = "h",
+                interval = 1){
   pars3    <- c(initH, hd,hh,ud,uu)
-  pd3      <- numDeriv::grad(f3w, pars3, expectancy=expectancy)
+  pd3      <- numDeriv::grad(f3w, 
+                             pars3, 
+                             expectancy = expectancy,
+                             interval = interval)
   
-  s_init   <- pd3[1]
+  s_init.   <- pd3[1]
   pd3      <- pd3[-1]
  
    n        <- length(pd3)/4
@@ -959,12 +1007,12 @@ s3n <- function(hd, hh, ud, uu, initH = .99, expectancy = "h"){
            case = "3") |> 
     pivot_longer(1:4, names_to = "transition", values_to = "s")
   
-  bind_rows(tibble(age=0,case="3",transition="init",s=s_init),
+  bind_rows(tibble(age=0,case="3",transition="init",s=s_init.),
             out)
 }
 
 # wrappers to do numeric derivatives in tidy workflow
-s1nt <- function(data,init,expectancy){
+s1nt <- function(data,init,expectancy="h", interval = 1){
   pt <-
     data |> 
     select(age, transition, p) |> 
@@ -975,10 +1023,11 @@ s1nt <- function(data,init,expectancy){
      uu = pt$UU, 
      uh = pt$UH, 
      initH = init[1], 
-     expectancy = expectancy)
+     expectancy = expectancy,
+     interval = interval)
 }
 
-s2nt <- function(data,init,expectancy){
+s2nt <- function(data,init,expectancy="h",interval=1){
   pt <-
     data |> 
     select(age, transition, p) |> 
@@ -989,10 +1038,11 @@ s2nt <- function(data,init,expectancy){
       ud = pt$UD, 
       uh = pt$UH, 
       initH = init[1], 
-      expectancy = expectancy)
+      expectancy = expectancy,
+      interval = interval)
 }
 
-s3nt <- function(data,init,expectancy){
+s3nt <- function(data,init,expectancy="h",interval=1){
   pt <-
     data |> 
     select(age, transition, p) |> 
@@ -1003,12 +1053,13 @@ s3nt <- function(data,init,expectancy){
       ud = pt$UD, 
       uu = pt$UU, 
       initH = init[1], 
-      expectancy = expectancy)
+      expectancy = expectancy,
+      interval=interval)
 }
 # vectorized wrapper for s1(), etc; these can also be passed to 
 # DemoDecomp::ltre(), can help reduce residual to 0. 
 # first element of pars should be initH, followed by hh,hu,uu,uh in that order
-s1w <- function(func, pars, expectancy){
+s1w <- function(func, pars, expectancy="h",interval=1){
   initH <- pars[1]
   pars <- pars[-1]
   init <- c(initH, 1 - initH)
@@ -1020,7 +1071,8 @@ s1w <- function(func, pars, expectancy){
            uu=pars[,3],
            uh=pars[,4], 
            init = init, 
-           expectancy = expectancy) |> 
+           expectancy = expectancy,
+           interval = interval) |> 
     filter(age < max(age))
   c(filter(sen, transition == "init")$effect,
     filter(sen, transition == "HH")$effect,
@@ -1030,7 +1082,7 @@ s1w <- function(func, pars, expectancy){
 }
 
 # first element of pars should be initH, followed by hd,hu,ud,uh in that order
-s2w <- function(func, pars, expectancy){
+s2w <- function(func, pars, expectancy = "h", interval = 1){
   initH <- pars[1]
   pars <- pars[-1]
   init <- c(H = initH, U = 1 - initH)
@@ -1041,7 +1093,9 @@ s2w <- function(func, pars, expectancy){
            hu=pars[,2],
            ud=pars[,3],
            uh=pars[,4], 
-           init = init, expectancy = expectancy) |> 
+           init = init, 
+           expectancy = expectancy,
+           interval = interval) |> 
     filter(age < max(age))
   c(filter(sen, transition == "init")$effect,
     filter(sen, transition == "HD")$effect,
@@ -1051,7 +1105,7 @@ s2w <- function(func, pars, expectancy){
 }
 
 # first element of pars should be initH, followed by hd,hh,ud,uu in that order
-s3w <- function(func, pars, expectancy){
+s3w <- function(func, pars, expectancy = "h", interval = 1){
   initH <- pars[1]
   pars <- pars[-1]
   init <- c(H = initH, U = 1 - initH)
@@ -1062,7 +1116,9 @@ s3w <- function(func, pars, expectancy){
            hh=pars[,2],
            ud=pars[,3],
            uu=pars[,4], 
-           init = init, expectancy = expectancy) |> 
+           init = init, 
+           expectancy = expectancy,
+           interval = interval) |> 
     filter(age < max(age))
   c(filter(sen, transition == "init")$effect,
     filter(sen, transition == "HD")$effect,
@@ -1081,13 +1137,25 @@ s3w <- function(func, pars, expectancy){
 # -If mortality is equal between states then initial conditions have no leverage
 # -If health deterioration is irreversible then initial conditions are 
 # very important
-s_init <- function(hh,hu,uu,uh){
+s_init <- function(hh,hu,uu,uh, interval = 1){
   
-  sh <- f1(hh, hu, uu, uh, init = c(H = 1, U = 0), expectancy = "h") - 
-    f1(hh, hu, uu, uh, init = c(H = 0, U = 1), expectancy = "h") 
+  sh <- f1(hh, hu, uu, uh, 
+           init = c(H = 1, U = 0), 
+           expectancy = "h",
+           interval = interval) - 
+    f1(hh, hu, uu, uh, 
+       init = c(H = 0, U = 1), 
+       expectancy = "h",
+       interval = interval) 
   
-  su <- f1(hh, hu, uu, uh, init = c(H = 1, U = 0), expectancy = "u") - 
-    f1(hh, hu, uu, uh, init = c(H = 0, U = 1), expectancy = "u")
+  su <- f1(hh, hu, uu, uh, 
+           init = c(H = 1, U = 0), 
+           expectancy = "u",
+           interval = interval) - 
+    f1(hh, hu, uu, uh, 
+       init = c(H = 0, U = 1), 
+       expectancy = "u",
+       interval = interval)
   
   st <- sh + su
   c(h = sh, u = su, t = st)
