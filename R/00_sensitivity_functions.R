@@ -588,9 +588,9 @@ s2 <- function(hd, hu, ud, uh,
     separate_wider_delim(state_age,
                          names=c("state","age"),
                          delim="_") |> 
-    filter(age >= agefrom) |> 
     mutate(age = as.numeric(age),
-           agefrom = as.numeric(agefrom))
+           agefrom = as.numeric(agefrom)) |> 
+    filter(age >= agefrom) 
   
   # TR: here 2 decimals allows for quarters, 
   # but not a super great solution
