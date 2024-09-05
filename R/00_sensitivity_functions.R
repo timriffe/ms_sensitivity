@@ -595,15 +595,15 @@ s2 <- function(hd, hu, ud, uh,
   
   # TR: here 2 decimals allows for quarters, 
   # but not a super great solution
-  if (interval == 1){
-    senl <- senl |> 
-      mutate(age = as.integer(age), 
-             agefrom = as.integer(agefrom))
-  } else {
-    senl <- senl |> 
-      mutate(age =  round(age,2), 
-             agefrom = round(agefrom,2))
-  }
+  # if (interval == 1){
+  #   senl <- senl |> 
+  #     mutate(age = as.integer(age), 
+  #            agefrom = as.integer(agefrom))
+  # } else {
+  #   senl <- senl |> 
+  #     mutate(age =  round(age,2), 
+  #            agefrom = round(agefrom,2))
+  # }
   
   if (expectancy == "h"){
     out =
