@@ -322,7 +322,6 @@ s1 <- function(hh, hu, uu, uh,
   # we use a shorthand solution for sensitivity to initial conditions.
   # eq 14
   s_in <- s_init(hh,hu,uu,uh,
-                 interval = interval,
                  interval = interval)
   
   # This gives identical values for h and u, which would sum to t,
@@ -1148,25 +1147,25 @@ s3w <- function(func, pars, expectancy = "h", interval = 1){
 # -If mortality is equal between states then initial conditions have no leverage
 # -If health deterioration is irreversible then initial conditions are 
 # very important
-s_init <- function(hh,hu,uu,uh, interval = 1){
+s_init <- function(hh,hu,uu,uh,interval = 1){
   
   sh <- f1(hh, hu, uu, uh, 
            init = c(H = 1, U = 0), 
            expectancy = "h",
-           interval = interval) - 
+           interval=interval) - 
     f1(hh, hu, uu, uh, 
        init = c(H = 0, U = 1), 
        expectancy = "h",
-       interval = interval) 
+       interval=interval) 
   
   su <- f1(hh, hu, uu, uh, 
            init = c(H = 1, U = 0), 
            expectancy = "u",
-           interval = interval) - 
+           interval=interval) - 
     f1(hh, hu, uu, uh, 
        init = c(H = 0, U = 1), 
        expectancy = "u",
-       interval = interval)
+       interval=interval)
   
   st <- sh + su
   c(h = sh, u = su, t = st)
