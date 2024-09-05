@@ -565,11 +565,11 @@ s2 <- function(hd, hu, ud, uh,
   sen = delta_u %*% d_x
   
   # first 4 rows = first age,
-  age_from      = rep(0:as.integer(n/interval),each=s^2) * interval 
+  age_from      = rep(0:n,each=s^2)
   state_from_to = rep(c("HD","UH","UD","HU"),n+1)
   rownames(sen) = paste(state_from_to, age_from, sep = "_")
   
-  age_to        = rep(0:as.integer(n/interval),each=s) * interval 
+  age_to        = rep(0:n,each=s) 
   effect_on     = rep(c("H","U"),n+1)
   colnames(sen) = paste(effect_on, age_to, sep="_")
   
@@ -618,7 +618,8 @@ s2 <- function(hd, hu, ud, uh,
     out = tibble(age = 0,
                  transition = "init",
                  effect = s_in["h"]) |> 
-      bind_rows(out)
+      bind_rows(out) |> 
+      mutate(age = age * interval)
   }
   if (expectancy == "u"){
     out =
@@ -634,7 +635,8 @@ s2 <- function(hd, hu, ud, uh,
     out = tibble(age = 0,
                  transition = "init",
                  effect = s_in["u"]) |> 
-      bind_rows(out)
+      bind_rows(out)|> 
+      mutate(age = age * interval)
   }
   if (expectancy == "t"){
     out =
@@ -649,7 +651,8 @@ s2 <- function(hd, hu, ud, uh,
     out = tibble(age = 0,
                  transition = "init",
                  effect = s_in["t"]) |> 
-      bind_rows(out)
+      bind_rows(out)|> 
+      mutate(age = age * interval)
   }
   if (expectancy == "all"){
     H =
@@ -685,7 +688,8 @@ s2 <- function(hd, hu, ud, uh,
                  age = c(0,0,0),
                  transition = rep("init",3),
                  effect = s_in[c("h","u","t")]) |> 
-      bind_rows(out)
+      bind_rows(out)|> 
+      mutate(age = age * interval)
     
   }
   out
