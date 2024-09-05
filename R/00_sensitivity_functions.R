@@ -524,7 +524,7 @@ s2 <- function(hd, hu, ud, uh,
   
   
   # eq 12
-  d_x = solve(diag(nrow(delta_x)) * 2  - delta_x)
+  d_x = solve(diag(nrow(delta_x)) * 2  - delta_x) * interval
   
   # eq 14
   # initial effects sorting code is ad hoc, 
@@ -566,11 +566,11 @@ s2 <- function(hd, hu, ud, uh,
   sen = delta_u %*% d_x
   
   # first 4 rows = first age,
-  age_from      = rep(0:n,each=s^2)
+  age_from      = rep(0:n,each=s^2) * interval 
   state_from_to = rep(c("HD","UH","UD","HU"),n+1)
   rownames(sen) = paste(state_from_to, age_from, sep = "_")
   
-  age_to        = rep(0:n,each=s)
+  age_to        = rep(0:n,each=s) * interval 
   effect_on     = rep(c("H","U"),n+1)
   colnames(sen) = paste(effect_on, age_to, sep="_")
   
@@ -589,10 +589,16 @@ s2 <- function(hd, hu, ud, uh,
     separate_wider_delim(state_age,
                          names=c("state","age"),
                          delim="_") |> 
-    mutate(age = as.integer(age),
-           agefrom = as.integer(agefrom)) |> 
+    # TR: here 2 decimals allows for quarters, 
+    # but not a super great solution
+    mutate(age = if_else(interval == 1, 
+                         as.integer(age), 
+                         round(age,2)),
+           agefrom = if_else(interval == 1, 
+                             as.integer(agefrom), 
+                             round(agefrom,2))) |> 
     filter(age >= agefrom) |> 
-    mutate(effect = effect * interval)
+    mutate(effect = effect)
   
   if (expectancy == "h"){
     out =
