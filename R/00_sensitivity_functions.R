@@ -589,16 +589,19 @@ s2 <- function(hd, hu, ud, uh,
     separate_wider_delim(state_age,
                          names=c("state","age"),
                          delim="_") |> 
-    # TR: here 2 decimals allows for quarters, 
-    # but not a super great solution
-    mutate(age = if_else(interval == 1, 
-                         as.integer(age), 
-                         round(age,2)),
-           agefrom = if_else(interval == 1, 
-                             as.integer(agefrom), 
-                             round(agefrom,2))) |> 
-    filter(age >= agefrom) |> 
-    mutate(effect = effect)
+    filter(age >= agefrom)
+  
+  # TR: here 2 decimals allows for quarters, 
+  # but not a super great solution
+  if (interval == 1){
+    senl <- senl |> 
+      mutate(age = as.integer(age), 
+             agefrom = as.integer(agefrom))
+  } else {
+    senl <- senl |> 
+      mutate(age =  round(age,2), 
+             agefrom = round(agefrom,2))
+  }
   
   if (expectancy == "h"){
     out =
