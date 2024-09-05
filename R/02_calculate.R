@@ -64,7 +64,7 @@ s1all <-
                names_to = "transition",
                values_to = "p") |> 
   group_by(sex) %>%
-  group_modify(~s1t(data = .x, expectancy = "all")) |> 
+  group_modify(~s1t(data = .x, expectancy = "all", interval = 1)) |> 
   ungroup() |> 
   mutate(case = 1, 
          .before = 1)
