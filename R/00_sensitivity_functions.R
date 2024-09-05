@@ -565,11 +565,11 @@ s2 <- function(hd, hu, ud, uh,
   sen = delta_u %*% d_x
   
   # first 4 rows = first age,
-  age_from      = rep(0:n,each=s^2) * interval 
+  age_from      = rep(0:as.integer(n/interval),each=s^2) * interval 
   state_from_to = rep(c("HD","UH","UD","HU"),n+1)
   rownames(sen) = paste(state_from_to, age_from, sep = "_")
   
-  age_to        = rep(0:n,each=s) * interval 
+  age_to        = rep(0:as.integer(n/interval),each=s) * interval 
   effect_on     = rep(c("H","U"),n+1)
   colnames(sen) = paste(effect_on, age_to, sep="_")
   
