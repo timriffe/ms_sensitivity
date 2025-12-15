@@ -28,7 +28,7 @@ s1_constrained <- function(hh, hu, uu, uh,
   delta_x_l = list()
   for (i in 1:n){
     pt_eq3 <- matrix(c(hh[i],hu[i],uh[i],uu[i]),ncol=s)
-    eq13 <- matrix(c(1-lh[i],-lh[i],-lu[i],1-lu[i]), ncol=s)
+    eq13   <- matrix(c(1-lh[i],-lh[i],-lu[i],1-lu[i]), ncol=s)
     # eq 14 R1
     delta_x_l[[i]] <- eq13 %*% t(pt_eq3)
     
@@ -37,7 +37,8 @@ s1_constrained <- function(hh, hu, uu, uh,
     #                           hu[i],
     #                           uh[i],
     #                           uu[i]),
-    #                         ncol=s)
+    #                         ncol=s,
+    #                         byrow = TRUE)
   }
   # ------------------------------
   # eq__ # not sure yet
@@ -45,13 +46,20 @@ s1_constrained <- function(hh, hu, uu, uh,
     Matrix::bdiag(delta_x_l) |> 
     mpad(side = "l", n = s, value = 0) |> 
     mpad(side = "b", n = s, value = 0)
-  
-  
+  diag(delta_x) <- 1
+
   # eq__
   # We use 2 instead of 1 because delta_x has 1s
   # in the diagonal; slightly different from standard 
   # transient matrix.
   d_x = solve(diag(nrow(delta_x)) * 2  - delta_x)
+  
+  # d_x[1,seq(1,124) %% 2 == 1] |> sum() 
+  # d_x[2,seq(1,124) %% 2 == 1] |> sum()
+  # d_x[1,seq(1,124) %% 2 == 0] |> sum()
+  # d_x[2,seq(1,124) %% 2 == 0] |> sum()
+  
+  
   
   # we use a shorthand solution for sensitivity to initial conditions.
   # eq 14
@@ -78,6 +86,7 @@ s1_constrained <- function(hh, hu, uu, uh,
                    -hu[i],1-hu[i],0,0,
                    0,0,1-uh[i],-uh[i],
                    0,0,-uu[i],1-uu[i]),4)
+
     # eq 19 R1
     li <- matrix(c(lh[i],0,lu[i],0,0,lh[i],0,lu[i]),
                  ncol = s)
@@ -90,9 +99,9 @@ s1_constrained <- function(hh, hu, uu, uh,
     Matrix::bdiag(delta_u_l) |> 
     mpad(side = "l", n = s, value = 0) |> 
     mpad(side = "b", n = s^2, value = 0)
-  
+
   # full sensitivity,
-  # eq 14 R1
+  # eq 27 R1
   sen = delta_u %*% d_x
   
   # ----------------------------------------------- #
@@ -101,13 +110,16 @@ s1_constrained <- function(hh, hu, uu, uh,
   
   # first 4 rows = first age,
   age_from      = rep(0:n,each=s^2)
-  state_from_to = rep(c("HH","UH","UU","HU"),n+1)
+  state_from_to = rep(c("HH","HU","UH","UU"),n+1)
   rownames(sen) = paste(state_from_to,age_from,sep="_")
   # u1,u2,u3,u4
   
   age_to        = rep(0:n,each=s)
   effect_on     = rep(c("H","U"),n+1)
   colnames(sen) = paste(effect_on,age_to,sep="_")
+  
+
+  
   
   # return output reformatted
   senl = 
@@ -241,8 +253,9 @@ s2_constrained <- function(hd, hu, ud, uh,
   # eq 14 R1
   delta_x_l = list()
   for (i in 1:n){
-    pt_eq3 <- matrix(c(hh[i],hu[i],uh[i],uu[i]),ncol=s)
-    eq13 <- matrix(c(1-lh[i],-lh[i],-lu[i],1-lu[i]), ncol=s)
+    # p3: hh,uu,ud,hd
+    pt_eq3 <- matrix(c(hd[i],uh[i],ud[i],hu[i]),ncol=s)
+    eq13   <- matrix(c(1-lh[i],-lh[i],-lu[i],1-lu[i]), ncol=s)
     # eq 14 R1
     delta_x_l[[i]] <- eq13 %*% t(pt_eq3)
   }
@@ -445,6 +458,14 @@ data <- trans |>
                values_to = "p") |> 
   filter(sex=="m")
 
+ptibble <- 
+trans |> 
+  filter(sex == "m")
+
+hh <- ptibble |> pull(HH)
+hu <- ptibble |> pull(HU)
+uh <- ptibble |> pull(UH)
+uu <- ptibble |> pull(UU)
 
 s1all_constrained <-
   trans |> 
@@ -456,12 +477,20 @@ s1all_constrained <-
   ungroup() |> 
   mutate(case = 1, 
          .before = 1)
-s1all_constrained
+
+s1all_constrained |> 
+  filter(sex == "m")
+
 s1all_constrained |> 
   filter(transition != "init",
-         expectancy != "t") |> 
+         expectancy =="u",
+         sex == "f") |> 
   ggplot(aes(x=age,y=effect,color = transition)) +
-  geom_line() +
-  facet_wrap(sex~expectancy) +
+  geom_line(linewidth=2) +
   theme_minimal() +
   labs(y="sensitivity")
+
+s1all_constrained |> 
+  filter(transition != "init",
+         expectancy =="u",
+         sex == "f") 
