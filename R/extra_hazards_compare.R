@@ -31,6 +31,7 @@ library(tidyverse)
 library(expm)
 library(compositions)
 library(DemoDecomp)
+source("R/00_functions_classic.R")
 source("R/00_sensitivity_functions.R")
 ## ------------------------------------------------------------
 ## 1) Read annual transition probabilities
@@ -815,11 +816,41 @@ probs_annual_dec$cc <- horiuchi(f2dd,
                                 probs_annual_dec$f,
                                 df = probs_annual_dec[,c("age","transition")],
                                 N = 20)
+probs_annual_dec$variant = "P2 horiuchi"
+
+
+probs_annual_dec2 <-
+probs_annual |> 
+  pivot_longer(-c(sex,age), values_to = "p", names_to = "transition", names_prefix = "p_") |> 
+  pivot_wider(names_from = sex, values_from = p) |> 
+  mutate(p = (m+f) / 2,
+         delta = f-m) 
+
+probs_annual_dec2<-
+  probs_annual_dec2 |>   
+  group_modify(~s2t(data = .x,expectancy = "h", init = c(H=1,U=0))) |> 
+  filter(transition != "init") |> 
+  mutate(age = age + 50) |> 
+  left_join(probs_annual_dec2, by = join_by(age,transition)) |> 
+  mutate(cc = delta * effect) |> 
+  select(age, transition, cc) |> 
+  mutate(variant="P2 analytic")
+
+
+dec_p2_compare <- bind_rows(probs_annual_dec, probs_annual_dec2)
 # this plot should match the p2 decomp results in the manuscript
-probs_annual_dec |> 
-  ggplot(aes(x=age,y=cc,color=transition)) +
+dec_p2_compare |> 
+  ggplot(aes(x=age,y=cc,color=transition, linetype=  variant)) +
   geom_line() +
-  theme_minimal()
-## ------------------------------------------------------------
+  theme_minimal() +
+  labs(title = "compare analytic P2 with Horiuchi P2",
+       subtitle = "small differences due to sensitivity being evaluated at exact midpoint")
+
+# ------------------------------------------------------------------ #
+# now have established that Horiuchi can match our analytic results  #
+# this was done using the manuscript probabilities; Now we can       #
+# compare hazard-based Horiuchi with P2 probability-based Horiuchi   #
+# for the case of haz_cr and probs_cr (which correspond)             #
+## ----------------------------------------------------------------- #
 ## End of script
 ## ------------------------------------------------------------
