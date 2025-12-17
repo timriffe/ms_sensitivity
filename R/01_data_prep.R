@@ -114,6 +114,7 @@ p_tibble_orig_monthly_m <- left_join(fromHm,
                                      by = "age") %>% 
   relocate(age,.before=1)
 
+
 # convert to annualized transitions. We do this one age at a time, then bind.
 p_tibble_orig_annual_f <-
   p_tibble_orig_monthly_f %>% 
