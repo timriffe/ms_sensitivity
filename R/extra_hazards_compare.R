@@ -33,6 +33,7 @@ library(compositions)
 library(DemoDecomp)
 source("R/00_functions_classic.R")
 source("R/00_sensitivity_functions.R")
+
 ## ------------------------------------------------------------
 ## 1) Read annual transition probabilities
 ## ------------------------------------------------------------
@@ -137,6 +138,13 @@ probs_monthly <- fromU_m |>
 # instead of probs, in which case you'll need to always set dt = 1/12 
 # instead of dt = 1.
 
+dt = 1;
+dt=1/12
+if (dt == 1){
+  probs <- probs_annual
+} else {
+  probs = probs_monthly
+}
 
 ## ------------------------------------------------------------
 ## 2) Functions: CTMC (logm/expm) and CR hazard mappings
@@ -294,8 +302,8 @@ hazards_to_probs_cr <- function(haz, dt = 1) {
 ## ------------------------------------------------------------
 
 ## 3.1 Hazards: logm-based CTMC vs CR
-haz_ctmc_logm <- probs_to_hazards_ctmc_logm(probs_annual, dt = 1)
-haz_cr        <- probs_to_hazards_cr(probs_annual, dt = 1)
+haz_ctmc_logm <- probs_to_hazards_ctmc_logm(probs, dt = dt)
+haz_cr        <- probs_to_hazards_cr(probs, dt = dt)
 
 ## Example: look at h_HD and h_HU by sex and age
 haz_long <- bind_rows(
@@ -326,12 +334,12 @@ ggplot(
   )
 
 ## 3.2 Probabilities: original vs CR-CTMC-implied probabilities
-probs_cr <- hazards_to_probs_ctmc(haz_cr, dt = 1)
+probs_cr <- hazards_to_probs_ctmc(haz_cr, dt = dt)
 # Note: you can get back the original probabilities exatly
 # using hazards_to_probs_cr(), but then we can't do this 
 # comparison!
 
-probs_orig_long <- probs_annual |>
+probs_orig_long <- probs |>
   pivot_longer(
     cols      = starts_with("p_"),
     names_to  = "transition",
@@ -579,7 +587,7 @@ haz_rowwise <- haz_cr
 
 ## Choose perturbation size and dt
 eps_pert <- 1e-3
-dt_pert  <- 1
+dt_pert  <- dt
 
 ## 6.1 CR mapping hazards -> probs
 perturb_results_cr <- run_hazard_perturbation_cr(
@@ -637,7 +645,7 @@ ctmc_frac_global <- ctmc_frac_origin |>
   )
 # The vast majority of total counterperturbation is taken by the self-transition
 # located in the same origin state as the hazard perturbation.
-ctmc_frac_global
+
 
 ctmc_frac_origin_summary <- ctmc_frac_origin |>
   group_by(hazard_perturbed) |>
@@ -791,13 +799,13 @@ run_hazard_perturbation_ctmc_taylor <- function(haz_df,
 ## 10) DemoDecomp::horiuchi() comparison
 ##     (CR hazards vs CR-derived probabilities)
 ## ------------------------------------------------------------
-probs_annual_dec <-
-  probs_annual |> 
+probs_dec <-
+  probs |> 
   pivot_longer(-c(sex,age),names_to = "transition", values_to = "p", names_prefix = "p_") |> 
   pivot_wider(names_from = sex, values_from = p) |> 
   filter(!transition %in% c("HH","UU"))
   
-f2dd <- function(probs_vec, df, init = c(H=1,U=0), expectancy = "h"){
+f2dd <- function(probs_vec, df, init = c(H=1,U=0), expectancy = "h",dt=1){
 
   df$p <- probs_vec
   df   <- pivot_wider(df, names_from = transition, values_from = p)
@@ -806,38 +814,41 @@ f2dd <- function(probs_vec, df, init = c(H=1,U=0), expectancy = "h"){
      ud = df$UD,
      uh = df$UH,
      init = init,
-     expectancy = expectancy)
+     expectancy = expectancy,
+     interval = dt)
 }
 
-f2dd(probs_vec = probs_annual_dec$f,
-                 df=probs_annual_dec[,c("age","transition")])
-probs_annual_dec$cc <- horiuchi(f2dd,
-                                probs_annual_dec$m,
-                                probs_annual_dec$f,
-                                df = probs_annual_dec[,c("age","transition")],
-                                N = 20)
-probs_annual_dec$variant = "P2 horiuchi"
+
+probs_dec$cc <- horiuchi(f2dd,
+                         probs_dec$m,
+                         probs_dec$f,
+                         df = probs_dec[,c("age","transition")],
+                         dt = dt,
+                         N = 20)
+probs_dec$variant = "P2 horiuchi"
 
 
-probs_annual_dec2 <-
-probs_annual |> 
+probs_dec2 <-
+  probs |> 
   pivot_longer(-c(sex,age), values_to = "p", names_to = "transition", names_prefix = "p_") |> 
   pivot_wider(names_from = sex, values_from = p) |> 
   mutate(p = (m+f) / 2,
          delta = f-m) 
 
-probs_annual_dec2<-
-  probs_annual_dec2 |>   
-  group_modify(~s2t(data = .x,expectancy = "h", init = c(H=1,U=0))) |> 
-  filter(transition != "init") |> 
+probs_dec2<-
+  probs_dec2 |>   
+  group_modify(~s2t(data = .x,
+                    expectancy = "h", 
+                    init = c(H=1,U=0),
+                    interval=dt)) |> filter(transition != "init") |> 
   mutate(age = age + 50) |> 
-  left_join(probs_annual_dec2, by = join_by(age,transition)) |> 
+  left_join(probs_dec2, by = join_by(age,transition)) |> 
   mutate(cc = delta * effect) |> 
   select(age, transition, cc) |> 
   mutate(variant="P2 analytic")
 
 
-dec_p2_compare <- bind_rows(probs_annual_dec, probs_annual_dec2)
+dec_p2_compare <- bind_rows(probs_dec, probs_dec2)
 # this plot should match the p2 decomp results in the manuscript
 dec_p2_compare |> 
   ggplot(aes(x=age,y=cc,color=transition, linetype=  variant)) +
@@ -845,6 +856,116 @@ dec_p2_compare |>
   theme_minimal() +
   labs(title = "compare analytic P2 with Horiuchi P2",
        subtitle = "small differences due to sensitivity being evaluated at exact midpoint")
+
+
+# Now we need the same decomp but using probs_cr
+f2dd_haz_ctmc <- function(haz_vec,
+                          df,
+                          init = c(H = 1, U = 0),
+                          expectancy = "h",
+                          dt = 1) {
+  
+  # Attach hazards to long template
+  df$h <- haz_vec
+  
+  # Wide hazards per age, with h_ prefix added ONCE
+  haz_wide <- df %>%
+    tidyr::pivot_wider(names_from = transition, values_from = h) %>%
+    dplyr::arrange(age) %>%
+    dplyr::mutate(sex = "x") %>%  # dummy
+    dplyr::select(sex, age, h_HU, h_HD, h_UH, h_UD)
+  
+  # Hazards → probabilities (names now p_*)
+  probs <- hazards_to_probs_ctmc(haz_wide, dt = dt)
+  
+  # Feed probabilities to P2 calculator
+  f2(
+    hd = probs$p_HD,
+    hu = probs$p_HU,
+    ud = probs$p_UD,
+    uh = probs$p_UH,
+    init = init,
+    expectancy = expectancy,
+    interval = dt
+  )
+}
+
+haz_cr_dec <-
+  haz_cr %>%
+  dplyr::select(
+    sex, age,
+    h_HU,
+    h_HD,
+    h_UH,
+    h_UD
+  ) %>%
+  tidyr::pivot_longer(
+    cols = -c(sex,age),
+    names_to = "transition",
+    values_to = "h"
+  ) %>%
+  tidyr::pivot_wider(names_from = sex, values_from = h) %>%
+  dplyr::arrange(age, transition)
+
+# Note on computational cost here!
+# hazard-based decomp using horiuchi needs to run expm() ca 2.1*10^7 times,
+# and it's running f2(), and pivoting over 1e5 times, so this takes a very very
+# long time to execute. Point being, we can compare to see convergence,
+# but then know that this approach really isn't required to do a good job.
+
+if (dt == 1/12){
+  stop("This code might take >5 hours to execute\nYou can choose to read in its results in the next line if you want\nOtherwise, manually execute the next two lines in this block")
+haz_cr_dec$cc <- horiuchi(f2dd_haz_ctmc, haz_cr_dec$m,haz_cr_dec$f,df=haz_cr_dec |> select(transition, age),dt=dt,init=c(H=1,U=0),N=20)
+haz_cr_dec$variant = "hazard"
+}
+# uncomment this line below if you want to skip the 
+# haz_cr_dec <- read_csv("haz_decomp_monthly.csv.gz")
+
+# now do P2 to probs_cr
+probs_cr_dec <-
+  probs_cr |> 
+  pivot_longer(-c(sex,age), values_to = "p", names_to = "transition", names_prefix = "p_") |> 
+  pivot_wider(names_from = sex, values_from = p) |> 
+  mutate(p = (m+f) / 2,
+         delta = f-m) 
+
+probs_cr_dec<-
+  probs_cr_dec |>   
+  group_modify(~s2t(data = .x,
+                    expectancy = "h", 
+                    init = c(H=1,U=0), 
+                    interval = dt)) |> 
+  filter(transition != "init") |> 
+  mutate(age = age + 50) |> 
+  left_join(probs_cr_dec, by = join_by(age,transition)) |> 
+  mutate(cc = delta * effect) |> 
+  select(age, transition, m,f,cc) |> 
+  mutate(variant="P2 analytic")
+
+haz_prob_compare <-
+  haz_cr_dec |> 
+  mutate(transition = substr(transition,3,4)) |> 
+  bind_rows(probs_cr_dec)
+
+haz_prob_compare |> 
+  ggplot(aes(x=age,y=cc, color = transition, linetype = variant)) +
+  geom_line() +
+  theme_minimal() +
+  labs(y = "contribution to gap (years)")
+
+haz_prob_compare |> 
+  group_by(transition, variant) |> 
+  summarize(cc = sum(cc,na.rm=TRUE)) |> 
+  pivot_wider(names_from = variant, values_from=cc)
+
+haz_prob_compare |> 
+  mutate(sen = cc/(f-m)) |> 
+  ggplot(aes(x=age,y=sen,color=transition))+
+  geom_line()+
+  facet_wrap(~variant)
+
+write_csv(haz_prob_compare,"haz_prob_decomp_monthly.csv.gz")
+
 
 # ------------------------------------------------------------------ #
 # now have established that Horiuchi can match our analytic results  #
