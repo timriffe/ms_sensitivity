@@ -452,6 +452,8 @@ s1t_constrained <- function(data,init,expectancy, interval = 1){
      interval = interval)
 }
 
+
+
 data <- trans |> 
   pivot_longer(-c(sex,age),
                names_to = "transition",
@@ -477,20 +479,52 @@ s1all_constrained <-
   ungroup() |> 
   mutate(case = 1, 
          .before = 1)
+s1all <-
+  trans |> 
+  pivot_longer(-c(sex,age),
+               names_to = "transition",
+               values_to = "p") |> 
+  group_by(sex) %>%
+  group_modify(~s1t(data = .x, expectancy = "all", interval = 1)) |> 
+  ungroup() |> 
+  mutate(case = 1, 
+         .before = 1)
+s2all <-
+  trans |> 
+  pivot_longer(-c(sex,age),
+               names_to = "transition",
+               values_to = "p") |> 
+  group_by(sex) %>%
+  group_modify(~s2t(data = .x, expectancy = "all", interval = 1)) |> 
+  ungroup() |> 
+  mutate(case = 1, 
+         .before = 1)
+s3all <-
+  trans |> 
+  pivot_longer(-c(sex,age),
+               names_to = "transition",
+               values_to = "p") |> 
+  group_by(sex) %>%
+  group_modify(~s3t(data = .x, expectancy = "all", interval = 1)) |> 
+  ungroup() |> 
+  mutate(case = 1, 
+         .before = 1)
 
-s1all_constrained |> 
-  filter(sex == "m")
 
 s1all_constrained |> 
   filter(transition != "init",
-         expectancy =="u",
+         expectancy =="h",
          sex == "f") |> 
   ggplot(aes(x=age,y=effect,color = transition)) +
-  geom_line(linewidth=2) +
+  geom_line(linewidth=1) +
   theme_minimal() +
   labs(y="sensitivity")
 
-s1all_constrained |> 
+s3all |> 
   filter(transition != "init",
-         expectancy =="u",
-         sex == "f") 
+         expectancy =="h",
+         sex == "f") |> 
+  ggplot(aes(x=age,y=effect,color = transition)) +
+  geom_line(linewidth=1) +
+  theme_minimal() +
+  labs(y="sensitivity")

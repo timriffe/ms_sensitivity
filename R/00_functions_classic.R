@@ -17,7 +17,6 @@ init_constant <- function(x){
 }
 
 
-
 pi_block <- function(p, state_from, state_to, age) {
   
   state_fromi  <- state_from[1]

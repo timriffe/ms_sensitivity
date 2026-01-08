@@ -17,7 +17,7 @@ fig2 <-
                                 UH=expression(p[uh]),
                                 UD=expression(p[ud]) )) 
 fig2
-ggsave("fig_transitions.pdf",fig2)
+ggsave("fig2.pdf",fig2,width = 7, height = 8)
 
 # Table 1: Expectancies and differences, LaTeX code later modified somewhat
 expectancies |> 
@@ -33,7 +33,8 @@ fig3 <-
    filter(transition != "init",
           expectancy != "t") |> 
    mutate(case = paste0("P",case),
-          age=age+50) |> 
+          age=age+50,
+          expectancy = if_else(expectancy == "h","DFLE","DLE")) |> 
    rename(sensitivity = effect) |> 
    ggplot(aes(x=age,y=sensitivity,color=transition,linetype=sex)) +
    geom_line() +
@@ -49,7 +50,7 @@ fig3 <-
    theme_minimal() +
    coord_cartesian(clip = 'off') 
 fig3
-ggsave("fig_sensitivities.pdf", fig3, width = 5, height = 8)
+ggsave("fig3.pdf", fig3, width = 5, height = 8)
 # Appendix Figure of sensitivities for females, all three cases
 fig_sen_appendix <-
   sen_all |> 
@@ -78,7 +79,7 @@ fig_sen_appendix <-
 
 
 fig_sen_appendix
-ggsave("fig_appendix_sensitivities.pdf", fig_sen_appendix, width = 8, height = 7)
+ggsave("fig6_appendix.pdf", fig_sen_appendix, width = 8, height = 7)
 
 
 
@@ -112,7 +113,8 @@ f_deltas <-
                                 UU = expression(p[uu]),
                                 UH = expression(p[uh]),
                                 UD = expression(p[ud]))) 
-ggsave("fig_deltas_appendix.pdf",f_deltas, width=5,height=4)
+f_deltas
+ggsave("fig5_appendix.pdf",f_deltas, width=5,height=4)
 
 # Checking crossover age for HU deltas, which is considered in manuscript
 # discussion
@@ -132,7 +134,7 @@ fig4 <-
   geom_line() +
   facet_wrap(~case) +
   theme_minimal() +
-  labs(y = "contribution to difference in HLE") + 
+  labs(y = "contribution to difference in DFLE") + 
   scale_color_discrete(labels=c(HH = expression(p[hh]),
                                 HU = expression(p[hu]),
                                 HD = expression(p[hd]),
@@ -142,7 +144,7 @@ fig4 <-
   theme_minimal() +
   coord_cartesian(clip = 'off') 
 fig4
-ggsave("fig_decomp.pdf",fig4, width=5,height=4)
+ggsave("fig4.pdf",fig4, width=5,height=4)
 
 # Appendix C Figure decomp: all expectancies considered
 f_d_appendix <-
