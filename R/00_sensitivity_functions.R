@@ -122,7 +122,7 @@ f1w <- function(pars,
   colnames(pars) <- c("HH","HU","UU","UH")
   #if (missing(init)) init <- init_constant(pars[1,])
   f1(hh = pars[,"HH"], 
-     hu =pars[,"HU"],
+     hu = pars[,"HU"],
      uu = pars[,"UU"],
      uh = pars[,"UH"],
      init = init,
@@ -276,32 +276,27 @@ s1 <- function(hh, hu, uu, uh,
   n     = length(hh)
   # transient states
   s     = 2
-  
-  u1    = hh[1:n]
-  u2    = uh[1:n]
-  u3    = uu[1:n]
-  u4    = hu[1:n]
-  
+
   # survivor stock by state
-  x1    = rep(0, n + 1)
-  x2    = rep(0, n + 1)
-  x1[1] = init["H"]
-  x2[1] = init["U"]
+  lh    = rep(0, n + 1)
+  lu    = rep(0, n + 1)
+  lh[1] = init["H"]
+  lu[1] = init["U"]
   
   # P1 in generic terms
   for (i in 1:n){
-    x1[i+1] = x1[i] * u1[i] + x2[i] * u2[i]
-    x2[i+1] = x2[i] * u3[i] + x1[i] * u4[i]
+    lh[i+1] = lh[i] * hh[i] + lu[i] * uh[i]
+    lu[i+1] = lu[i] * uu[i] + lh[i] * hu[i]
   }
   
   # eq 9
   delta_x_l = list()
   for (i in 1:n){
     # eq 28 sitting in here
-    delta_x_l[[i]] = matrix(c(u1[i],
-                              u2[i],
-                              u4[i],
-                              u3[i]),
+    delta_x_l[[i]] = matrix(c(hh[i],  # HH
+                              uh[i],  # UH
+                              hu[i],  # HU
+                              uu[i]), # UU
                             ncol=s)
   }
   
@@ -321,7 +316,7 @@ s1 <- function(hh, hu, uu, uh,
   
   # we use a shorthand solution for sensitivity to initial conditions.
   # eq 14
-  s_in <- s_init(hh,hu,uu,uh,
+  s_in <- s_init(hh=hh,hu=hu,uu=uu,uh=uh,
                  interval = interval)
   
   # This gives identical values for h and u, which would sum to t,
@@ -340,10 +335,8 @@ s1 <- function(hh, hu, uu, uh,
   # eq 16
   for (i in 1:n){
     # eq 31 sitting in here
-    delta_u_l[[i]] = matrix(c(x1[i], 
-                              x2[i],
-                              0,0,0,0,
-                              x2[i],x1[i]),
+    delta_u_l[[i]] = matrix(c(lh[i], lu[i], 0,0,
+                              0,0, lu[i],lh[i]),
                             ncol = s)
   }
   # eq 16  (cont)
@@ -364,7 +357,7 @@ s1 <- function(hh, hu, uu, uh,
   age_from      = rep(0:n,each=s^2)
   state_from_to = rep(c("HH","UH","UU","HU"),n+1)
   rownames(sen) = paste(state_from_to,age_from,sep="_")
-  # u1,u2,u3,u4
+  # hh,uh,uu,hu
   
   age_to        = rep(0:n,each=s)
   effect_on     = rep(c("H","U"),n+1)
@@ -486,31 +479,26 @@ s2 <- function(hd, hu, ud, uh,
   # transient states
   s     = 2
   
-  u1    = hd[1:n]
-  u2    = uh[1:n]
-  u3    = ud[1:n]
-  u4    = hu[1:n]
-  
   # survivor stock by state
-  x1    = rep(0,n+1)
-  x2    = rep(0,n+1)
-  x1[1] = init["H"]
-  x2[1] = init["U"]
+  lh    = rep(0,n+1)
+  lu    = rep(0,n+1)
+  lh[1] = init["H"]
+  lu[1] = init["U"]
   
   # P2 in generic terms
   for (i in 1:n){
-    x1[i+1] = x1[i] * (1 - u1[i] - u4[i]) + x2[i] * u2[i]
-    x2[i+1] = x2[i] * (1 - u3[i] - u2[i]) + x1[i] * u4[i]
+    lh[i+1] = lh[i] * (1 - hd[i] - hu[i]) + lu[i] * uh[i]
+    lu[i+1] = lu[i] * (1 - ud[i] - uh[i]) + lh[i] * hu[i]
   }
   
   # eq 9
   delta_x_l = list()
   for (i in 1:n){
     # eq 33 sitting in here
-    delta_x_l[[i]] = matrix(c(1-u1[i]-u4[i],
-                              u2[i],
-                              u4[i],
-                              1-u3[i]-u2[i]),
+    delta_x_l[[i]] = matrix(c(1-hd[i]-hu[i],
+                              uh[i],
+                              hu[i],
+                              1-ud[i]-uh[i]),
                             ncol=s)
   }
   
@@ -533,9 +521,9 @@ s2 <- function(hd, hu, ud, uh,
   # init_H_ind   <- col(init_effects) %% 2 == 1
   # init_U_ind   <- col(init_effects) %% 2 == 0
   s_in <- s_init(hh = (1 - hd - hu),
-                 hu,
+                 hu = hu,
                  uu = (1 - ud - uh),
-                 uh,
+                 uh = uh,
                  interval = interval)
   
   # eq 16
@@ -543,14 +531,14 @@ s2 <- function(hd, hu, ud, uh,
   # 4x2 matrices
   for (i in 1:n){
     # eq 36 sitting in here
-    delta_u_l[[i]] = matrix(c(-x1[i], 
-                              x2[i],
+    delta_u_l[[i]] = matrix(c(-lh[i], 
+                              lu[i],
                               0,
-                              -x1[i],
+                              -lh[i],
                               0,
-                              -x2[i],
-                              -x2[i],
-                              x1[i]),
+                              -lu[i],
+                              -lu[i],
+                              lh[i]),
                             ncol = s)
   }
   
@@ -693,7 +681,7 @@ s2 <- function(hd, hu, ud, uh,
     
   }
   out
-
+  
 }
 
 
@@ -706,30 +694,25 @@ s3 <- function(hh, uu, ud, hd,
   # transient states
   s     = 2
   
-  u1    = hh[1:n]
-  u2    = uu[1:n]
-  u3    = ud[1:n]
-  u4    = hd[1:n]
-  
   # survivor stock by state
-  x1    = rep(0,n+1)
-  x2    = rep(0,n+1)
-  x1[1] = init["H"]
-  x2[1] = init["U"]
+  lh    = rep(0,n+1)
+  lu    = rep(0,n+1)
+  lh[1] = init["H"]
+  lu[1] = init["U"]
   
   for (i in 1:n){
-    x1[i+1] = x1[i] * u1[i] + x2[i] * (1 - u3[i] - u2[i])
-    x2[i+1] = x2[i] * u2[i] + x1[i] * (1 - u4[i] - u1[i])
+    lh[i+1] = lh[i] * hh[i] + lu[i] * (1 - ud[i] - uu[i])
+    lu[i+1] = lu[i] * uu[i] + lh[i] * (1 - hd[i] - hh[i])
   }
   
   # eq 9
   delta_x_l = list()
   for (i in 1:n){
     # eq 39 sitting in here
-    delta_x_l[[i]] = matrix(c(u1[i],
-                              1-u3[i]-u2[i],
-                              1-u4[i]-u1[i],
-                              u2[i]),
+    delta_x_l[[i]] = matrix(c(hh[i],
+                              1-ud[i]-uu[i],
+                              1-hd[i]-hh[i],
+                              uu[i]),
                             ncol=s)
   }
   
@@ -755,14 +738,14 @@ s3 <- function(hh, uu, ud, hd,
   # 4x2 matrices
   for (i in 1:n){
     # eq 42
-    delta_u_l[[i]] = matrix(c(x1[i], 
-                              -x2[i],
-                              -x2[i],
+    delta_u_l[[i]] = matrix(c(lh[i], 
+                              -lu[i],
+                              -lu[i],
                               0,
-                              -x1[i],
-                              x2[i],
+                              -lh[i],
+                              lu[i],
                               0,
-                              -x1[i]),
+                              -lh[i]),
                             ncol = s)
   }
   # eq 16 (cont)
