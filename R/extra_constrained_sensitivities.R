@@ -863,3 +863,5 @@ trans_dec |>
   mutate(cc = effect * delta) |> 
   group_by(expectancy) |> 
   summarize(Delta = sum(cc, na.rm = TRUE)) # no
+
+# end
