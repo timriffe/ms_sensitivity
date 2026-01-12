@@ -786,13 +786,80 @@ sen_all <- bind_rows(unconstrained_all,constrained_all)
 sen_all |> 
   filter(transition != "init",
          expectancy =="h",
-         sex == "f") |> 
+         sex == "f",
+         case == 2) |> 
   ggplot(aes(x=age,y=effect,color = transition)) +
   geom_line(linewidth=1) +
   theme_minimal() +
   labs(y="sensitivity") +
-  facet_grid(vars(version),vars(case), scales = "free_y") +
+  facet_grid(vars(version),vars(case)) +
   theme(strip.text = element_text(size=14),
-        axis.title = element_text(size=14))
+        axis.title = element_text(size=14)) +
+  ylim(-1,1)
 
 ##############################
+
+# Derive decompositions
+init_f <- trans |> filter(sex== "f") |> slice(1) |> 
+  init_constant()
+init_m <- trans |> filter(sex== "m") |> slice(1) |> 
+  init_constant()
+init_row <- tibble(age = 50, 
+                   transition = "init", 
+                   m = init_m[["H"]],
+                   f = init_f[["H"]])
+trans_dec <-
+  trans |> 
+  pivot_longer(-c(sex,age),names_to = "transition",values_to="p") |> 
+  pivot_wider(names_from = sex, values_from = p) |> 
+  bind_rows(init_row) |> 
+  arrange(age, transition) |> 
+  mutate(delta = f - m,
+         p = (m + f) / 2)
+
+# what are the empirical gaps we want to explain?
+expectancies <-
+  trans |> 
+  pivot_longer(-c(sex,age),
+               names_to = "transition",
+               values_to = "p") |> 
+  group_by(sex) %>%
+  summarize(hle = f1t(data = pick(everything()), 
+                      expectancy = "h"),
+            ule = f1t(data = pick(everything()), 
+                      expectancy = "u"),
+            le = f1t(data = pick(everything()), 
+                     expectancy = "t")) |> 
+  pivot_longer(-sex,names_to = "expectancy", values_to = "e50") |> 
+  pivot_wider(names_from = sex, values_from = e50) |> 
+  mutate(Delta = f - m)
+
+expectancies
+
+# can we recover these gaps using constrained sensitivities?
+trans_dec |> 
+  filter(transition != "init") |> 
+  s1t_constrained(expectancy = "all") |> 
+  mutate(age = age + 50) |> 
+  left_join(trans_dec) |> 
+  mutate(cc = effect * delta) |> 
+  group_by(expectancy) |> 
+  summarize(Delta = sum(cc, na.rm = TRUE)) # no
+
+trans_dec |> 
+  filter(transition != "init") |> 
+  s2t_constrained(expectancy = "all") |> 
+  mutate(age = age + 50) |> 
+  left_join(trans_dec) |> 
+  mutate(cc = effect * delta) |> 
+  group_by(expectancy) |> 
+  summarize(Delta = sum(cc, na.rm = TRUE)) # no
+
+trans_dec |> 
+  filter(transition != "init") |> 
+  s3t_constrained(expectancy = "all") |> 
+  mutate(age = age + 50) |> 
+  left_join(trans_dec) |> 
+  mutate(cc = effect * delta) |> 
+  group_by(expectancy) |> 
+  summarize(Delta = sum(cc, na.rm = TRUE)) # no
