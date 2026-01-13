@@ -7,20 +7,23 @@
 ##  1. Reads the Lievre annual transition probabilities.
 ##  2. Shows why logm()-based CTMC hazards are problematic.
 ##  3. Constructs competing-risks (CR) hazards from the same probs
-##     and shows they are demographically plausible.
 ##  4. Compares original probs vs probs implied by CR hazards.
 ##  5. Runs perturbation experiments:
 ##       - CR mapping hazards -> probs
 ##       - CTMC mapping hazards -> probs via expm(Q)
 ##     and computes fractions of counterperturbation
 ##     absorbed by self-transitions and within the origin state.
-##  6. (Optional) Adds a Taylor-based approximation block.
-##  7. (Template) Shows how one might compare DemoDecomp::horiuchi()
-##     on CR hazards vs CR-derived probabilities.
+##  6. Optional Taylor-based approximation block.
+##  7. Compares DemoDecomp::horiuchi()
+##     on CR hazards vs CR-derived probabilities. We see monthly
+##     probabilities better with these data
 ##
 ## These analyses are *illustrative* and based on hazards that
 ## imply plausible probabilities, but they do **not** reproduce
-## the exact probabilities used in the main manuscript.
+## the exact probabilities used in the main manuscript. The trick 
+## is to find hazards and probabilities that can toggle back and forth
+## using expm() and the like. That way we can compare decomposition
+## behavior (and consistency) under annual and monthly age intervals.
 ## ============================================================
 
 ## ------------------------------------------------------------
@@ -40,11 +43,13 @@ source("R/extra_hazards_compare_functions.R")
 
 # Note: in the following, you could reproduce this using probs_monthly
 # instead of probs, in which case you'll need to always set dt = 1/12 
-# instead of dt = 1.
+# instead of dt = 1. i.e. you can run this script using dt either 1 or 
+# 1/12, just one at a time.
 
-dt = 1; dt = 1/12
+dt = 1#; dt = 1/12
 
 if (dt == 1){
+  # file created in 01_data_prep.R
   probs <- readr::read_csv("transitions_lievre2003_annual.csv") |>
     pivot_longer(
       cols      = -c(age, sex),
