@@ -1,4 +1,7 @@
-
+# Aspects of this script were prepared with assistance from
+# ChatGPT v 5.1. This was an iterative process, and all functions
+# herein have been reviewed and tested in detail multiple times.
+# We take full responsibility for the contents of this script.
 
 ## 2.1 CTMC hazards via matrix log
 ## probs: tibble/data.frame with columns
