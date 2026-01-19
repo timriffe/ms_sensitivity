@@ -1,5 +1,9 @@
 ## ============================================================
-## extra_hazard_test.R
+## Parts of this script were prepared with assistance from
+## ChatGPT v 5.1. This was an iterative process, and all functions
+## herein have been reviewed and tested in detail multiple times.
+## We take full responsibility for the contents of this script.
+
 ## Supplementary analysis: hazards vs probabilities and
 ## counterperturbation patterns (CR and CTMC)
 ##

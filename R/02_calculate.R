@@ -106,9 +106,6 @@ trans_avg <-
          delta = f - m) |> 
   select(-f, -m)
 
-delta <- 
-  trans_avg |> 
-  select(-p)
 
 # rather laborious setup for initial conditions. This is laborious because
 # we generate the initial conditions using the transitions in the first time
