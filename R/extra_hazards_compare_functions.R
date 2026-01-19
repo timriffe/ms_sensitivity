@@ -23,7 +23,7 @@ probs_to_hazards_ctmc_logm <- function(probs, dt = 1) {
     )
     
     ## matrix log -> generator Q
-    L <- expm::logm(P)
+    L <- expm::logm(P, method = "Eigen")
     if (any(abs(Im(L)) > 1e-8)) {
       warning("Non-negligible imaginary parts in logm(P); check probabilities.")
     }
