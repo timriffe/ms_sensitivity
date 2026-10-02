@@ -48,7 +48,8 @@ fig3 <-
                                  UH=expression(p[uh]),
                                  UD=expression(p[ud]) )) +
    theme_minimal() +
-   coord_cartesian(clip = 'off') 
+   coord_cartesian(clip = 'off')  +
+   guides(color=guide_legend(title="focal\ntransition"))
 fig3
 ggsave("fig3.pdf", fig3, width = 5, height = 8)
 # Appendix Figure of sensitivities for females, all three cases
@@ -75,7 +76,8 @@ fig_sen_appendix <-
                                 UH=expression(p[uh]),
                                 UD=expression(p[ud]) )) +
   theme_minimal() +
-  coord_cartesian(clip = 'off') 
+  coord_cartesian(clip = 'off') +
+  guides(color=guide_legend(title="focal\ntransition"))
 
 
 fig_sen_appendix
@@ -142,7 +144,8 @@ fig4 <-
                                 UH = expression(p[uh]),
                                 UD = expression(p[ud]))) +
   theme_minimal() +
-  coord_cartesian(clip = 'off') 
+  coord_cartesian(clip = 'off')  +
+  guides(color=guide_legend(title="focal\ntransition"))
 fig4
 ggsave("fig4.pdf",fig4, width=5,height=4)
 
@@ -170,7 +173,8 @@ f_d_appendix <-
                                 UH=expression(p[uh]),
                                 UD=expression(p[ud]) )) +
   theme_minimal() +
-  coord_cartesian(clip = 'off') 
+  coord_cartesian(clip = 'off')  +
+  guides(color=guide_legend(title="focal\ntransition"))
 f_d_appendix
 ggsave("fig_decomp_appendix.pdf",f_d_appendix, width = 8, height = 7)
 

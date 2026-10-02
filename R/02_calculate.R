@@ -106,7 +106,9 @@ trans_avg <-
          delta = f - m) |> 
   select(-f, -m)
 
-
+delta <-
+  trans_avg |>
+  select(age, transition, delta)
 # rather laborious setup for initial conditions. This is laborious because
 # we generate the initial conditions using the transitions in the first time
 # step, but in the decomposition we would like to treat the initial conditions
